@@ -8,12 +8,15 @@ using Common.Helpers.RoleHelper;
 using System.Diagnostics;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace WebRole1
 {
     public class WebRole : RoleEntryPoint
     {
-
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly ManualResetEvent runCompleteEvent = new ManualResetEvent(false);
         private readonly IRoleStateMonitor monitor;
         private readonly TelemetryClient telemetry = new TelemetryClient();
 
@@ -37,11 +40,27 @@ namespace WebRole1
             // For information on handling configuration changes
             // see the MSDN topic at http://go.microsoft.com/fwlink/?LinkId=166357.
 
+            Trace.TraceInformation("Webrole is starting");
+
             RoleEnvironment.StatusCheck += RoleEnvironment_StatusCheck;
 
             monitor.ProcessCommands();
 
             return base.OnStart();
+        }
+
+        public override void Run()
+        {
+            Trace.TraceInformation("Webrole is running");
+
+            try
+            {
+                this.RunAsync(this.cancellationTokenSource.Token).Wait();
+            }
+            finally
+            {
+                this.runCompleteEvent.Set();
+            }
         }
 
         private void RoleEnvironment_StatusCheck(object sender, RoleInstanceStatusCheckEventArgs e)
@@ -53,7 +72,7 @@ namespace WebRole1
 
             isBusy = HasBadHealth || StopCommand;
 
-            monitor.NotifyState(isBusy, RoleEnvironment.CurrentRoleInstance.Id);
+            //monitor.NotifyState(isBusy, RoleEnvironment.CurrentRoleInstance.Id);
 
             if (isBusy)
             {
@@ -86,6 +105,30 @@ namespace WebRole1
             HasBadHealth = false;
 
             HealthStatus = "OK";
+        }
+
+        public override void OnStop()
+        {
+            Trace.TraceInformation("Webrole is stopping");
+
+            this.cancellationTokenSource.Cancel();
+            this.runCompleteEvent.WaitOne();
+
+            base.OnStop();
+
+            Trace.TraceInformation("Webrole has stopped");
+        }
+
+        private async Task RunAsync(CancellationToken cancellationToken)
+        {
+            // TODO: Replace the following with your own logic.
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                // Send the pulse every second
+                await monitor.NotifyStateAsync(this.isBusy, InstanceId);
+
+                await Task.Delay(1000);
+            }
         }
     }
 }

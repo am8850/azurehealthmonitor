@@ -16,6 +16,7 @@ namespace Common.Helpers.RoleHelper
         public string InstanceId { get; set; }
 
         public string Command { get; set; }
+        public TimeSpan PulseTimeToLive { get; set; }
 
         public string Subscription { get; set; }
         public ServiceBusRoleStateMonitor(string cloudServiceName, string instanceId)
@@ -23,6 +24,7 @@ namespace Common.Helpers.RoleHelper
             //
             CloudServiceName = cloudServiceName;
             InstanceId = instanceId;
+            PulseTimeToLive = new TimeSpan(0, 1, 0);
 
             // Create Topic and subscription for health pulse
             NotificationTopic = CloudServiceName + "_Pulse";
@@ -39,7 +41,7 @@ namespace Common.Helpers.RoleHelper
 
         public void ProcessCommands()
         {
-            Azure.ServiceBusHelper.ReceiveMessage(CloudServiceName, InstanceId, m =>
+            Azure.ServiceBusHelper.ReceiveMessageAsync(CloudServiceName, InstanceId, m =>
             {
                 Command = m.Properties["Command"].ToString();
 
@@ -61,11 +63,37 @@ namespace Common.Helpers.RoleHelper
                 statusMessage.Properties["Message"] = message ?? string.Empty;
 
                 // Message will automatically expire in 1 minute
-                statusMessage.TimeToLive = new TimeSpan(0, 1, 0);
+                statusMessage.TimeToLive = PulseTimeToLive;
 
                 try
                 {
                     Azure.ServiceBusHelper.SendMessage(NotificationTopic, statusMessage);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        public async Task NotifyStateAsync(bool state, string instanceId, string message = null)
+        {
+            // Try to notify the status
+            if (!string.IsNullOrEmpty(NotificationTopic))
+            {
+                var statusMessage = new BrokeredMessage();
+
+                statusMessage.Properties["InstanceId"] = instanceId;
+
+                statusMessage.Properties["State"] = state;
+
+                statusMessage.Properties["Message"] = message ?? string.Empty;
+
+                // Message will automatically expire in 1 minute
+                statusMessage.TimeToLive = PulseTimeToLive;
+
+                try
+                {
+                    await Azure.ServiceBusHelper.SendMessageAsync(NotificationTopic, statusMessage);
                 }
                 catch (Exception)
                 {

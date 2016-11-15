@@ -53,15 +53,10 @@
     <Compile Include="Azure\ServiceBusHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RoleHelper\IRoleStateMonitor.cs" />
-    <Compile Include="RoleHelper\RoleCommands.cs" />
-    <Compile Include="RoleHelper\ServiceBusCommandProcessor.cs" />
     <Compile Include="RoleHelper\ServiceBusRoleStateMonitor.cs" />
-    <Compile Include="RoleHelper\ServiceBusRoleStateNotifier.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <Compile Include="RoleHelper\ICommandProcessor.cs" />
-    <Compile Include="RoleHelper\IRoleStateNotifier.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -14,5 +14,6 @@ namespace Common.Helpers.RoleHelper
 
         void NotifyState(bool state, string instanceId, string message = null);
 
+        Task NotifyStateAsync(bool state, string InstanceId, string message = null);
     }
 }
