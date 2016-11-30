@@ -10,10 +10,12 @@ namespace Common.Helpers.RoleHelper
     {
         string Command { get; set; }
 
+        TimeSpan PulseTimeToLive { get; set; }
+
         void ProcessCommands();
 
-        void NotifyState(bool state, string instanceId, string message = null);
+        void NotifyState(bool state, string jobName, string instanceId, string message = null);
 
-        Task NotifyStateAsync(bool state, string InstanceId, string message = null);
+        Task NotifyStateAsync(bool state, string jobName, string InstanceId, string message = null);
     }
 }

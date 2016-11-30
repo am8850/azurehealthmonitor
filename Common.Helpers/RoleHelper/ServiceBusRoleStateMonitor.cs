@@ -8,34 +8,47 @@ using System.Threading.Tasks;
 
 namespace Common.Helpers.RoleHelper
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class ServiceBusRoleStateMonitor : IRoleStateMonitor
     {
         private string NotificationTopic;
+
         public string CloudServiceName { get; set; }
 
         public string InstanceId { get; set; }
 
         public string Command { get; set; }
+
         public TimeSpan PulseTimeToLive { get; set; }
 
         public string Subscription { get; set; }
+
         public ServiceBusRoleStateMonitor(string cloudServiceName, string instanceId)
         {
             //
             CloudServiceName = cloudServiceName;
+
+            //
             InstanceId = instanceId;
+
+            //
             PulseTimeToLive = new TimeSpan(0, 0, 2);
 
             // Create Topic and subscription for health pulse
             NotificationTopic = CloudServiceName + "_Pulse";
-
+            
+            //
             Azure.ServiceBusHelper.CreateTopic(NotificationTopic);
 
+            //
             Azure.ServiceBusHelper.CreateSubscription(NotificationTopic, "AllMessage");
 
             // Create Topic and subscription for Cloud Service Commands
             Azure.ServiceBusHelper.CreateTopic(CloudServiceName);
 
+            //
             Azure.ServiceBusHelper.CreateSubscription(CloudServiceName, InstanceId, new SqlFilter("InstanceId = '" + InstanceId + "'"));
         }
 
@@ -49,12 +62,14 @@ namespace Common.Helpers.RoleHelper
             });
         }
 
-        public void NotifyState(bool state, string instanceId, string message = null)
+        public void NotifyState(bool state, string jobName, string instanceId, string message = null)
         {
             // Try to notify the status
             if (!string.IsNullOrEmpty(NotificationTopic))
             {
                 var statusMessage = new BrokeredMessage();
+
+                statusMessage.Properties["JobName"] = string.Empty;
 
                 statusMessage.Properties["InstanceId"] = instanceId;
 
@@ -75,12 +90,14 @@ namespace Common.Helpers.RoleHelper
             }
         }
 
-        public async Task NotifyStateAsync(bool state, string instanceId, string message = null)
+        public async Task NotifyStateAsync(bool state, string jobName, string instanceId, string message = null)
         {
             // Try to notify the status
             if (!string.IsNullOrEmpty(NotificationTopic))
             {
                 var statusMessage = new BrokeredMessage();
+
+                statusMessage.Properties["JobName"] = jobName;
 
                 statusMessage.Properties["InstanceId"] = instanceId;
 

@@ -35,6 +35,8 @@ namespace WebRole1
         /// </summary>
         private readonly TelemetryClient telemetry = new TelemetryClient();
 
+        private readonly string CSJobName = "DemoCSWebApp";
+
         // Support fields
         private volatile bool isBusy = false;
         private bool HasBadHealth = false;
@@ -52,7 +54,11 @@ namespace WebRole1
             // Todo: Inject the monitor
             InstanceId = RoleEnvironment.CurrentRoleInstance.Id.Split('.')[2];
 
-            monitor = new ServiceBusRoleStateMonitor("DemoCSWebApp", InstanceId);
+            monitor = new ServiceBusRoleStateMonitor(CSJobName, InstanceId);
+
+#if (DEBUG)
+            monitor.PulseTimeToLive = new TimeSpan(0, 0, 15);
+#endif
         }
 
         public override bool OnStart()
@@ -148,14 +154,14 @@ namespace WebRole1
             while (!cancellationToken.IsCancellationRequested)
             {
                 // Send the pulse every second
-                await monitor.NotifyStateAsync(this.isBusy, InstanceId);
+                await monitor.NotifyStateAsync(this.isBusy, CSJobName, InstanceId);
 
                 await Healthcheck();
 
                 CheckCommand();
 
                 // Run approximately every 5 seconds
-                await Task.Delay(5000);
+                await Task.Delay(10000);
             }
         }
     }

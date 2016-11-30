@@ -22,6 +22,8 @@ namespace WorkerRole1
         private readonly TelemetryClient telemetry = new TelemetryClient();
         private readonly IRoleStateMonitor monitor;
 
+        private readonly string CSJobName = "WorkerRole1";
+
         private volatile bool isBusy = false;
         private bool HasBadHealth = false;
         private string HealthStatus;
@@ -33,7 +35,7 @@ namespace WorkerRole1
             // Todo: Inject the monitor
             InstanceId = RoleEnvironment.CurrentRoleInstance.Id.Split('.')[2];
 
-            monitor = new ServiceBusRoleStateMonitor("WorkerRole1", InstanceId);
+            monitor = new ServiceBusRoleStateMonitor(CSJobName, InstanceId);
         }
 
 
@@ -76,7 +78,7 @@ namespace WorkerRole1
 
             isBusy = HasBadHealth || StopCommand;
 
-            monitor.NotifyState(isBusy, RoleEnvironment.CurrentRoleInstance.Id);
+            monitor.NotifyState(isBusy, CSJobName, RoleEnvironment.CurrentRoleInstance.Id);
 
             if (isBusy)
             {
@@ -126,8 +128,16 @@ namespace WorkerRole1
             // TODO: Replace the following with your own logic.
             while (!cancellationToken.IsCancellationRequested)
             {
-                Trace.TraceInformation("Working");
-                await Task.Delay(1000);
+                try
+                {
+                    Trace.TraceInformation("Working");
+
+                    await Task.Delay(10000);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
             }
         }
     }

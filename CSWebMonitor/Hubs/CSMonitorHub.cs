@@ -31,11 +31,14 @@ namespace CSWebMonitor.Hubs
             //Call the broadcastMessage method to update clients.
             ServiceBusHelper.ReceiveMessageAsync("democswebapp_pulse", "AllMessage", m =>
             {
-                var instanceid = (string)m.Properties["InstanceId"];
-                var state = ((bool)m.Properties["State"]) ? "Down" : "Up";
-                Clients.All.pulse(instanceid, state);
-            });
+                var jobName = (string)m.Properties["JobName"];
 
+                var instanceid = (string)m.Properties["InstanceId"];
+
+                var state = ((bool)m.Properties["State"]) ? "Down" : "Up";
+
+                Clients.All.pulse(jobName, instanceid, state);
+            });
         }
 
         //public void Run()
