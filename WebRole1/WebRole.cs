@@ -15,18 +15,38 @@ namespace WebRole1
 {
     public class WebRole : RoleEntryPoint
     {
+        // Async fields
+        /// <summary>
+        /// 
+        /// </summary>
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        /// <summary>
+        /// 
+        /// </summary>
         private readonly ManualResetEvent runCompleteEvent = new ManualResetEvent(false);
+
+        // Monitor and telemetry fields
+        /// <summary>
+        /// 
+        /// </summary>
         private readonly IRoleStateMonitor monitor;
+        /// <summary>
+        /// 
+        /// </summary>
         private readonly TelemetryClient telemetry = new TelemetryClient();
 
+        // Support fields
         private volatile bool isBusy = false;
         private bool HasBadHealth = false;
         private string HealthStatus;
         private bool StopCommand = false;
         private string InstanceId;
+        private bool RecycleCommand = false;
 
-
+        // Constructor
+        /// <summary>
+        /// 
+        /// </summary>
         public WebRole()
         {
             // Todo: Inject the monitor
@@ -66,11 +86,10 @@ namespace WebRole1
         private void RoleEnvironment_StatusCheck(object sender, RoleInstanceStatusCheckEventArgs e)
         {
 
-            Healthcheck();
-
-            CheckCommand();
-
             isBusy = HasBadHealth || StopCommand;
+
+            if (RecycleCommand)
+                RoleEnvironment.RequestRecycle();
 
             //monitor.NotifyState(isBusy, RoleEnvironment.CurrentRoleInstance.Id);
 
@@ -98,9 +117,13 @@ namespace WebRole1
 
             if (monitor.Command == "Start")
                 StopCommand = false;
+
+            if (monitor.Command == "Recycle")
+                RecycleCommand = true;
+
         }
 
-        private void Healthcheck()
+        private async Task Healthcheck()
         {
             HasBadHealth = false;
 
@@ -127,7 +150,12 @@ namespace WebRole1
                 // Send the pulse every second
                 await monitor.NotifyStateAsync(this.isBusy, InstanceId);
 
-                await Task.Delay(1000);
+                await Healthcheck();
+
+                CheckCommand();
+
+                // Run approximately every 5 seconds
+                await Task.Delay(5000);
             }
         }
     }

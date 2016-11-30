@@ -24,7 +24,7 @@ namespace Common.Helpers.RoleHelper
             //
             CloudServiceName = cloudServiceName;
             InstanceId = instanceId;
-            PulseTimeToLive = new TimeSpan(0, 1, 0);
+            PulseTimeToLive = new TimeSpan(0, 0, 2);
 
             // Create Topic and subscription for health pulse
             NotificationTopic = CloudServiceName + "_Pulse";
